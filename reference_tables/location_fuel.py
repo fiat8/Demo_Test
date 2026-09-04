@@ -16,13 +16,26 @@ from pathlib import Path
 from config import TIER2_FILES, FUEL_BASE_PRICE, FUEL_RATE, FUEL_EXTEND_DAYS
 
 
+def _read_csv_thai(path) -> pd.DataFrame:
+    """
+    อ่าน CSV รองรับ encoding ภาษาไทยทุกแบบ
+    ลำดับ: utf-8-sig → utf-8 → tis-620 (cp874) → latin-1
+    """
+    for enc in ["utf-8-sig", "utf-8", "tis-620", "cp874", "latin-1"]:
+        try:
+            return pd.read_csv(path, encoding=enc)
+        except (UnicodeDecodeError, LookupError):
+            continue
+    raise ValueError(f"ไม่สามารถอ่านไฟล์ {path} ได้ — กรุณาบันทึกไฟล์ใหม่เป็น UTF-8")
+
+
 def load_location1() -> pd.DataFrame:
     """
     location1.csv — Origin Province → FILL IN 1
     Valid values: {2, 5}
     """
     path = TIER2_FILES["location1"]
-    df = pd.read_csv(path, encoding="utf-8-sig")
+    df = _read_csv_thai(path)
     _validate_location(df, "location1.csv", expected_values={2, 5})
     df["FILL IN"] = pd.to_numeric(df["FILL IN"], errors="coerce").astype("Int64")
     return df[["Province", "FILL IN"]].copy()
@@ -34,7 +47,7 @@ def load_location2() -> pd.DataFrame:
     Valid values: {10, 18}
     """
     path = TIER2_FILES["location2"]
-    df = pd.read_csv(path, encoding="utf-8-sig")
+    df = _read_csv_thai(path)
     _validate_location(df, "location2.csv", expected_values={10, 18})
     df["FILL IN"] = pd.to_numeric(df["FILL IN"], errors="coerce").astype("Int64")
     return df[["Province", "FILL IN"]].copy()
@@ -46,7 +59,7 @@ def load_draft_parameters() -> pd.DataFrame:
     Columns: Shpm Item Type, Load Charge Code, EFFECTIVEDATE, EXPIRATIONDATE, RATE
     """
     path = TIER2_FILES["draft_parameters"]
-    df = pd.read_csv(path, encoding="utf-8-sig")
+    df = _read_csv_thai(path)
 
     required = ["Shpm Item Type", "Load Charge Code",
                 "EFFECTIVEDATE", "EXPIRATIONDATE", "RATE"]
